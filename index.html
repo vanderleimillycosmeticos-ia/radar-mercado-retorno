@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Radar de Mercado · retorno da autorização</title>
+  <style>
+    :root { --fundo: #f5f6f8; --cartao: #fff; --texto: #1c2228; --suave: #5a6670; --destaque: #2563c9; --borda: #dde2e8; }
+    @media (prefers-color-scheme: dark) { :root { --fundo: #111417; --cartao: #191d21; --texto: #e5e8eb; --suave: #9aa5ae; --destaque: #6b9cf0; --borda: #2f353c; } }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box;
+           background: var(--fundo); color: var(--texto); font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+    .cartao { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 22px; max-width: 560px; width: 100%; }
+    h1 { font-size: 1.2rem; margin: 0 0 8px; }
+    p { margin: 8px 0; }
+    .suave { color: var(--suave); font-size: 0.9rem; }
+    a.botao, button { display: inline-block; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--destaque);
+           background: var(--destaque); color: #fff; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+    button.secundario { background: transparent; color: var(--texto); border-color: var(--borda); }
+    code { word-break: break-all; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="cartao">
+  <h1 id="titulo">Voltando para o Radar de Mercado…</h1>
+  <p id="texto">Autorização recebida do Mercado Livre. Você será levado de volta ao Radar no seu computador.</p>
+  <p><a class="botao" id="voltar" href="#">Voltar para o Radar</a></p>
+  <div id="manual" hidden>
+    <p class="suave">Se o Radar não abriu, copie o endereço abaixo e cole na tela <strong>Contas do ML › colar o endereço manualmente</strong>.</p>
+    <p><code id="endereco"></code></p>
+    <button class="secundario" type="button" id="copiar">Copiar endereço</button>
+  </div>
+  <p class="suave">Esta página não guarda nem envia o código para lugar nenhum: ela só o repassa para o Radar em
+    <code>127.0.0.1</code> (o seu próprio computador). Sozinho, o código não serve para nada sem a chave que fica no Radar.</p>
+</div>
+<script>
+(function () {
+  "use strict";
+  var PORTA = 8790;
+  var parametros = new URLSearchParams(window.location.search);
+  var codigo = parametros.get("code");
+  var estado = parametros.get("state");
+  var erro = parametros.get("error");
+  var destino = "http://127.0.0.1:" + PORTA + "/oauth/retorno";
+
+  var consulta = new URLSearchParams();
+  if (codigo) consulta.set("code", codigo);
+  if (estado) consulta.set("state", estado);
+  if (erro) consulta.set("error", erro);
+  var url = destino + "?" + consulta.toString();
+
+  document.getElementById("voltar").href = url;
+  document.getElementById("endereco").textContent = window.location.href;
+  document.getElementById("manual").hidden = false;
+  document.getElementById("copiar").addEventListener("click", function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(window.location.href);
+    this.textContent = "Copiado";
+  });
+
+  if (!codigo && !erro) {
+    document.getElementById("titulo").textContent = "Nenhuma autorização recebida";
+    document.getElementById("texto").textContent = "Abra esta página pelo botão “Conectar no Mercado Livre” do Radar.";
+    document.getElementById("voltar").href = "http://127.0.0.1:" + PORTA + "/contas";
+    return;
+  }
+  if (erro) {
+    document.getElementById("titulo").textContent = "A autorização não foi concluída";
+    document.getElementById("texto").textContent = "O Mercado Livre devolveu: " + erro + ". Volte ao Radar e tente de novo.";
+  }
+  // Limpa o código da barra de endereço/histórico desta aba antes de sair.
+  try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* sem histórico */ }
+  window.setTimeout(function () { window.location.replace(url); }, 600);
+})();
+</script>
+</body>
+</html>
